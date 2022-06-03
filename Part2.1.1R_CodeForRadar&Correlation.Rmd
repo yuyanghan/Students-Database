@@ -1,0 +1,79 @@
+---
+title: "sentiment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(readr)
+library(wesanderson)
+library(tibble)
+library(directlabels)
+library(rvg)
+library(magrittr)
+library(officer)
+library(corrplot)
+library(ggradar)
+```
+
+```{r}
+s=read.csv("SSIS.csv")
+```
+
+```{r}
+
+corr_mat=cor(se,method="s")
+library(reshape2)
+co=melt(corr_mat)
+head(co)
+ord=hclust(1-as.dist(corr_mat))$order
+co=melt(corr_mat[ord,ord])
+p2=ggplot(co, aes(Var1, Var2)) + 
+  geom_tile(aes(fill = value)) + 
+  geom_text(aes(fill = co$value, label = round(co$value, 2))) + 
+  scale_fill_gradient(low = "lightblue", high = "darkslategray") + 
+  theme(panel.grid.major.x=element_blank(), 
+        panel.grid.minor.x=element_blank(), 
+        panel.grid.major.y=element_blank(), 
+        panel.grid.minor.y=element_blank(),
+        panel.background=element_rect(fill="white"), 
+        axis.text.x = element_text(angle=90, hjust = 1,vjust=1,size = 12,face = "bold"), 
+        plot.title = element_text(size=20,face="bold"),
+        axis.text.y = element_text(size = 12,face = "bold")) + 
+  ggtitle("Correlation Plot") + theme(legend.title=element_text(face="bold", size=14)) + scale_y_discrete(name="") + 
+  scale_x_discrete(name="") + labs(fill="Corr. Coef.")
+
+dml1 <- dml(ggobj = p2)
+
+read_pptx() %>%
+  add_slide(layout = "Title and Content", master = "Office Theme") %>%
+  ph_with(dml1, location = ph_location(left = 0, top = 0.8, height = 5, width = 10))%>%
+  print("corr.pptx")
+```
+
+```{r}
+
+avg=s%>% select(ID, Term,Self.Awareness,Self.Management,Social.Awareness,Relationship.Skills,Responsible.Decision.Making,Motivation.to.Learn)%>%
+  group_by(Term)%>%
+  summarise_all("mean")
+
+avg=avg[ ,!(colnames(avg) == "ID")]
+```
+
+```{r}
+plot=ggradar(avg, 
+        values.radar = c(0, 0.5, 1),
+        grid.max=5, group.line.width=1, group.point.size = 2,
+        background.circle.colour = "white")
+dml <- dml(ggobj = plot)
+
+read_pptx() %>%
+  add_slide(layout = "Title and Content", master = "Office Theme") %>%
+  ph_with(dml, location = ph_location(left = 0, top = 0.8, height = 5, width = 10))%>%
+  print("radar.pptx")
+```
+
